@@ -1,0 +1,90 @@
+import requests
+from bs4 import BeautifulSoup
+from pprint import pprint
+import pandas as pd
+
+#stop1:request &pr
+ur1="https://www.twking.cc/"
+r = requests.get(ur1)
+r.encoding='utf8' #避免亂碼
+soup = BeautifulSoup(r.text, 'html.parser')
+# print(len(r.text))
+
+
+
+# soup.find_all('div',class:'booktop')
+# booktops=soup.find_all('div',attrs={"class":'booktop'})
+# for booktop in booktops:
+    # sol.1
+    # tops=booktop.find_all('p')
+    # top_type=tops[0].text #哪個top10?
+    # print(top_type)
+    # for top in tops[1:]:
+        # print('\t',top.a.text,':',top.a.get('href'))
+
+
+    # sol.2
+    # top_type=booktop.p.text
+    # tops=booktop.css.select('p,a') #小說
+    # print(top_type)
+    # for top in tops:
+    #     print('\t',top.text,':',top.get('href'))
+
+booktop_summerize=dict()
+booktops = soup.find_all('div',attrs={"class":'booktop'})
+for booktop in booktops:
+    tops = booktop.find_all('p')
+    for top in tops[1:]:
+        top_book_name = top.a.text.strip()
+        top_book_ur1 = top.a.get('href')
+
+        if top_book_name in booktop_summerize:
+            booktop_summerize[top_book_name]['count']+=1
+        else:
+            booktop_summerize[top_book_name] = {
+                'count': 1,
+                'href': top_book_ur1
+            }
+# print(booktop_summerize)
+# pprint(sorted(
+#     booktop_summarize.items(),
+#     reverse=True,
+#     key=lambda x:x[1]['count']))
+
+sorted_booktop_summerize=sorted(
+    booktop_summerize.items(),
+    reverse=True,
+    key=lambda x:x[1]['count'])
+
+# sorted(booktop_summarize.items(), key=lambda item: item[1]['href'])[::-1]
+
+# [
+#   (' 光明壁壘', {'count': 1, 'href': 'https://www.twking.cc/162_162374/'}),
+#   (' 光明壁壘', {'count': 1, 'href': 'https://www.twking.cc/162_162374/'}),
+#   (' 光明壁壘', {'count': 1, 'href': 'https://www.twking.cc/162_162374/'}),
+# ]
+
+# 格式: list of dictionary
+# [
+#     {'novel_name': 'ABC', 'count': 1, 'novel_page_url': '.....'},
+#     {'novel_name': 'DEF', 'count': 2, 'novel_page_url': '.....'},
+#     {'novel_name': 'GHI', 'count': 3, 'novel_page_url': '.....'},
+# ]
+
+
+book_rows =list()
+for book in sorted_booktop_summerize:
+    # 使用 get() 方法
+    book_name =book[0]
+    book_count = book[1]['count']
+    book_page_ur1 = book[1]['href']
+
+    book_row = {
+        'novel_name': book_name,
+        'top_count': book_count,
+        'novel_page_url': book_page_ur1
+    }
+    book_rows.append(book_row)
+
+booktop_summerize_df = pd.DataFrame(book_rows)
+booktop_summerize_df.to_csv('0217booktop.csv')
